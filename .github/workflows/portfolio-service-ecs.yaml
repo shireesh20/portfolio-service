@@ -52,7 +52,7 @@ Resources:
       Memory: "512"
       NetworkMode: awsvpc
       RequiresCompatibilities: [FARGATE]
-      ExecutionRoleArn: !GetAtt TaskExecutionRole.Arn
+      ExecutionRoleArn: !GetAtt [TaskExecutionRole, Arn]
       ContainerDefinitions:
         - Name: stockmarket_service
           Image: !Ref ImageURLStockMarket
@@ -160,4 +160,4 @@ Resources:
 Outputs:
   ServiceURL:
     Description: Public Load Balancer URL
-    Value: !Join ["", ["http://", !GetAtt LoadBalancer.DNSName]]
+    Value: !Join ["", ["http://", !GetAtt [LoadBalancer, DNSName]]]
