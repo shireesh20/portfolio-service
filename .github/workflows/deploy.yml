@@ -1,0 +1,57 @@
+name: Build and Deploy StockMarket Service
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+
+      - name: Install AWS CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y awscli
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR Public
+        run: |
+          aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/x7l8q9b6
+
+      - name: Build Docker image
+        run: |
+          docker build -t public.ecr.aws/x7l8q9b6/portfolio-service:latest .
+
+      - name: Push Docker image to ECR Public
+        run: |
+          docker push public.ecr.aws/x7l8q9b6/portfolio-service:latest
+
+      - name: Deploy CloudFormation stack
+        run: |
+          aws cloudformation deploy \
+            --template-file deploy/portfolio-service-ecs.yaml \
+            --stack-name stockmarket-stack \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --parameter-overrides \
+              DBHost=${{ secrets.DB_HOST }} \
+              DBUser=${{ secrets.DB_USER }} \
+              DBPassword=${{ secrets.DB_PASSWORD }} \
+              DBDatabase=${{ secrets.DB_NAME }} \
+              DBPort=${{ secrets.DB_PORT }} \
+              AWSRegion=us-east-1 \
+              CognitoUserPoolId=${{ secrets.COGNITO_USER_POOL_ID }} \
+              CognitoClientId=${{ secrets.COGNITO_APP_CLIENT_ID }} \
+              ImageURLStockMarket=public.ecr.aws/YOUR_ECR_NAMESPACE/stockmarket_service:latest \
+              VpcId=${{ secrets.VPC_ID }} \
+              PublicSubnet1=${{ secrets.PUBLIC_SUBNET_1 }} \
+              PublicSubnet2=${{ secrets.PUBLIC_SUBNET_2 }}

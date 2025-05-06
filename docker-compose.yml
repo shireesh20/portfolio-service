@@ -5,7 +5,7 @@ services:
     build: .
     container_name: stock-api
     ports:
-      - "5001:5000"  # Host:Container
+      - "5000:5000"  # Host:Container
     env_file:
       - .env         # Loads your AWS RDS & Cognito credentials
     restart: unless-stopped
