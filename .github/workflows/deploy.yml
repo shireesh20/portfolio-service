@@ -39,7 +39,7 @@ jobs:
       - name: Deploy CloudFormation stack
         run: |
           aws cloudformation deploy \
-            --template-file deploy/portfolio-service-ecs.yaml \
+            --template-file portfolio-service-ecs.yaml \
             --stack-name stockmarket-stack \
             --capabilities CAPABILITY_NAMED_IAM \
             --parameter-overrides \
