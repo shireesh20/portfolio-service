@@ -134,6 +134,8 @@ Resources:
 
   ECSService:
     Type: AWS::ECS::Service
+    DependsOn:
+      - Listener
     Properties:
       ServiceName: stockmarket-service
       Cluster: !Ref ECSCluster
