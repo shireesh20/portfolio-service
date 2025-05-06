@@ -1,48 +1,37 @@
-AWSTemplateFormatVersion: "2010-09-09"
-Description: ECS Fargate service for stockmarket with public ALB
+AWSTemplateFormatVersion: 2010-09-09
+Description: ECS Fargate setup for stockmarket service with ALB
 
 Parameters:
-  DBHost: String
-  DBUser: String
-  DBPassword: String
-  DBDatabase: String
+  DBHost:
+    Type: String
+  DBUser:
+    Type: String
+  DBPassword:
+    Type: String
+  DBDatabase:
+    Type: String
   DBPort:
     Type: String
     Default: "3306"
-  AWSRegion: String
-  CognitoUserPoolId: String
-  CognitoClientId: String
-  ImageURLStockMarket: String
-  VpcId: String
-  PublicSubnet1: String
-  PublicSubnet2: String
+  AWSRegion:
+    Type: String
+  CognitoUserPoolId:
+    Type: String
+  CognitoClientId:
+    Type: String
+  ImageURLStockMarket:
+    Type: String
+  VpcId:
+    Type: String
+  PublicSubnet1:
+    Type: String
+  PublicSubnet2:
+    Type: String
 
 Resources:
 
   ECSCluster:
     Type: AWS::ECS::Cluster
-    Properties:
-      ClusterName: stockmarket-cluster
-
-  TaskExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: ecsTaskExecutionRole-stockmarket
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ecs-tasks.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
-
-  LogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: /ecs/stockmarket
-      RetentionInDays: 7
 
   StockMarketTaskDefinition:
     Type: AWS::ECS::TaskDefinition
@@ -52,10 +41,12 @@ Resources:
       Memory: "512"
       NetworkMode: awsvpc
       RequiresCompatibilities: [FARGATE]
-      ExecutionRoleArn: !GetAtt [TaskExecutionRole, Arn]
+      ExecutionRoleArn: "arn:aws:iam::275499107900:role/ECSTaskExecutionRole"
+      TaskRoleArn: "arn:aws:iam::275499107900:role/ECSTaskRole"
       ContainerDefinitions:
         - Name: stockmarket_service
           Image: !Ref ImageURLStockMarket
+          Essential: true
           PortMappings:
             - ContainerPort: 5000
           Environment:
@@ -73,7 +64,7 @@ Resources:
               Value: !Ref AWSRegion
             - Name: COGNITO_USER_POOL_ID
               Value: !Ref CognitoUserPoolId
-            - Name: COGNITO_APP_CLIENT_ID
+            - Name: COGNITO_CLIENT_ID
               Value: !Ref CognitoClientId
           LogConfiguration:
             LogDriver: awslogs
@@ -85,7 +76,7 @@ Resources:
   ALBSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow HTTP
+      GroupDescription: Allow HTTP traffic
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -93,10 +84,10 @@ Resources:
           ToPort: 80
           CidrIp: 0.0.0.0/0
 
-  ECSServiceSecurityGroup:
+  ServiceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow traffic from ALB
+      GroupDescription: Allow ALB to talk to ECS
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -124,7 +115,12 @@ Resources:
       VpcId: !Ref VpcId
       TargetType: ip
       HealthCheckPath: /ping
-      HealthCheckProtocol: HTTP
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 2
+      Matcher:
+        HttpCode: 200
 
   Listener:
     Type: AWS::ElasticLoadBalancingV2::Listener
@@ -138,16 +134,17 @@ Resources:
 
   ECSService:
     Type: AWS::ECS::Service
-    DependsOn: Listener
     Properties:
+      ServiceName: stockmarket-service
       Cluster: !Ref ECSCluster
+      TaskDefinition: !Ref StockMarketTaskDefinition
       LaunchType: FARGATE
       DesiredCount: 1
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           SecurityGroups:
-            - !Ref ECSServiceSecurityGroup
+            - !Ref ServiceSecurityGroup
           Subnets:
             - !Ref PublicSubnet1
             - !Ref PublicSubnet2
@@ -155,9 +152,8 @@ Resources:
         - ContainerName: stockmarket_service
           ContainerPort: 5000
           TargetGroupArn: !Ref TargetGroup
-      TaskDefinition: !Ref StockMarketTaskDefinition
 
 Outputs:
-  ServiceURL:
-    Description: Public Load Balancer URL
-    Value: !Join ["", ["http://", !GetAtt [LoadBalancer, DNSName]]]
+  LoadBalancerDNS:
+    Description: Public URL of your stockmarket service
+    Value: !GetAtt LoadBalancer.DNSName
