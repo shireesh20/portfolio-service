@@ -48,7 +48,7 @@ jobs:
               DBUser=${{ secrets.DB_USER }} \
               DBPassword=${{ secrets.DB_PASSWORD }} \
               DBDatabase=${{ secrets.DB_NAME }} \
-              DBPort=${{ secrets.DB_PORT }} \
+              DBPort=3306 \
               AWSRegion=us-east-1 \
               CognitoUserPoolId=${{ secrets.COGNITO_USER_POOL_ID }} \
               CognitoClientId=${{ secrets.COGNITO_APP_CLIENT_ID }} \
