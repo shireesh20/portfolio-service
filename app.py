@@ -118,4 +118,9 @@ def create_app():
     app.register_blueprint(company_bp)
     app.register_blueprint(portfolio_bp)
 
+    @app.route("/", methods=["GET"])
+    def health_check():
+        return jsonify({"status": "healthy"}), 200
+
+
     return app
