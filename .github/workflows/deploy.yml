@@ -52,7 +52,7 @@ jobs:
               AWSRegion=us-east-1 \
               CognitoUserPoolId=${{ secrets.COGNITO_USER_POOL_ID }} \
               CognitoClientId=${{ secrets.COGNITO_APP_CLIENT_ID }} \
-              ImageURLStockMarket=public.ecr.aws/YOUR_ECR_NAMESPACE/stockmarket_service:latest \
+              ImageURLStockMarket=public.ecr.aws/x7l8q9b6/portfolio-service:latest \
               VpcId=${{ secrets.VPC_ID }} \
               PublicSubnet1=${{ secrets.PUBLIC_SUBNET_1 }} \
               PublicSubnet2=${{ secrets.PUBLIC_SUBNET_2 }}
