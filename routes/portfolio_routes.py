@@ -31,6 +31,9 @@ def get_user_portfolio():
         ).filter(Portfolio.user_id == g.user_id).all()
 
         portfolio_list = []
+        total_invested = 0.0
+        total_current_value = 0.0
+
         for row in results:
             ticker = row.ticker_symbol
             current_price = None
@@ -41,9 +44,11 @@ def get_user_portfolio():
                 logger.warning(f"Failed to fetch price for {ticker}: {e}")
                 current_price = None
 
+            invested = float(row.amount_invested)
+            qty = row.current_holding_qty
+
             if current_price is not None:
-                current_value = current_price * row.current_holding_qty
-                invested = float(row.amount_invested)
+                current_value = current_price * qty
                 profit_or_loss_amount = round(current_value - invested, 2)
                 profit_or_loss_percent = (
                     round((profit_or_loss_amount / invested) * 100, 2)
@@ -54,7 +59,12 @@ def get_user_portfolio():
                     "Loss" if profit_or_loss_amount < 0 else
                     "Break-even"
                 )
+
+                # Aggregate totals
+                total_invested += invested
+                total_current_value += current_value
             else:
+                current_value = None
                 profit_or_loss_amount = None
                 profit_or_loss_percent = None
                 status = "Price unavailable"
@@ -63,20 +73,45 @@ def get_user_portfolio():
                 "company_id": row.company_id,
                 "company_name": row.company_name,
                 "ticker_symbol": row.ticker_symbol,
-                "current_holding_qty": row.current_holding_qty,
-                "amount_invested": float(row.amount_invested),
+                "current_holding_qty": qty,
+                "amount_invested": invested,
                 "current_price": round(current_price, 2) if current_price else None,
                 "profit_or_loss_amount": profit_or_loss_amount,
                 "profit_or_loss_percent": profit_or_loss_percent,
                 "status": status
             })
 
+        # Summary totals
+        total_profit_or_loss_amount = round(total_current_value - total_invested, 2)
+        total_profit_or_loss_percent = (
+            round((total_profit_or_loss_amount / total_invested) * 100, 2)
+            if total_invested > 0 else None
+        )
+        # Determine overall status
+        if total_profit_or_loss_amount > 0:
+            overall_status = "Profit"
+        elif total_profit_or_loss_amount < 0:
+            overall_status = "Loss"
+        else:
+            overall_status = "Break-even"
+
+        response = {
+            "portfolio": portfolio_list,
+            "summary": {
+                "total_amount_invested": round(total_invested, 2),
+                "total_profit_or_loss_amount": total_profit_or_loss_amount,
+                "total_profit_or_loss_percent": total_profit_or_loss_percent,
+                "status": overall_status
+            }
+        }
+
         logger.info(f"Returned portfolio for user_id={g.user_id} with {len(portfolio_list)} entries")
-        return jsonify(portfolio_list), 200
+        return jsonify(response), 200
 
     except Exception as e:
         logger.error(f"Error in /portfolio for user_id={g.user_id}: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 
 
 @portfolio_bp.route('/transaction', methods=['POST'])
