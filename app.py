@@ -1,5 +1,6 @@
 from flask import Flask, request, session, g, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from flask_cors import CORS
 from config import Config
 from dotenv import load_dotenv
 from models import db
@@ -80,6 +81,19 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     db.init_app(app)
+    allowed_origins = [
+        'http://localhost:3000',  # React development server
+        'http://localhost:5173',  # Vite development server
+        # Add your production frontend URL when deploying
+    ]
+    CORS(app, 
+         resources={r"/*": {
+             "origins": allowed_origins,
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+             "allow_headers": ["Content-Type", "Authorization"],
+             "expose_headers": ["Content-Range", "X-Content-Range"],
+             "supports_credentials": True  # Required for sending/receiving cookies
+         }})
 
     @app.before_request
     def load_user():
