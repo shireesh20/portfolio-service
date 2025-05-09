@@ -84,11 +84,11 @@ def create_app():
 
     CORS(app, 
          resources={r"/*": {
-             "origins": ["54.85.135.204","http://thestockai.online"],
+             "origins": "*",
              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
              "allow_headers": ["Content-Type", "Authorization"],
              "expose_headers": ["Content-Range", "X-Content-Range"],
-             "supports_credentials": True  # Required for sending/receiving cookies
+             "supports_credentials": False  # Required for sending/receiving cookies
          }})
 
     @app.before_request
