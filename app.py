@@ -84,7 +84,7 @@ def create_app():
 
     CORS(app, 
          resources={r"/*": {
-             "origins": "*",
+             "origins": ["54.85.135.204","http://thestockai.online"],
              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
              "allow_headers": ["Content-Type", "Authorization"],
              "expose_headers": ["Content-Range", "X-Content-Range"],
