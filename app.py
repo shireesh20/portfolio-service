@@ -81,14 +81,10 @@ def create_app():
     app = Flask(__name__)
     app.config.from_object(Config)
     db.init_app(app)
-    allowed_origins = [
-        'http://localhost:3000',  # React development server
-        'http://localhost:5173',  # Vite development server
-        # Add your production frontend URL when deploying
-    ]
+
     CORS(app, 
          resources={r"/*": {
-             "origins": allowed_origins,
+             "origins": "*",
              "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
              "allow_headers": ["Content-Type", "Authorization"],
              "expose_headers": ["Content-Range", "X-Content-Range"],
